@@ -1,69 +1,85 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include<stdbool.h>
 void main(){
-char label[20],opcode[20],operand[20],code[20],flag=0;
-FILE *input,*optab,*symtab,*intermediate;
-int Locctr,start,length;
-input=fopen("input.txt","r");
-optab=fopen("optab.txt","r");
-symtab=fopen("symtab.txt","w");
-intermediate=fopen("intermediate.txt","w");
-fscanf(input,"%s\t%s\t%s",label,opcode,operand);
-if(strcmp(opcode,"START")==0)
-{
-Locctr=atoi(operand);
-start=Locctr;
-fprintf(intermediate,"%d\t%s\t%s\t%s",Locctr,label,opcode,operand);
-printf("%d\t%s\t%s\t%s",Locctr,label,opcode,operand);
-fscanf(input,"%s\t%s\t%s",label,opcode,operand);
-}
-else{
-Locctr=0;
-}
-while(strcmp(opcode,"END")!=0){
-if(strcmp(label,"**")!=0)
-{
-fprintf(symtab,"%d\t%s\n",Locctr,label);
-}
-fscanf(optab,"%s",code);
-while(strcmp(code,"END")!=0){
-if (strcmp(opcode,code)==0){
-Locctr+=3;
-break;
-}
-fscanf(optab,"%s",code);
-}
-if(strcmp(opcode,"**")!=0)
-{
-if(strcmp(opcode,"RESW")==0)
-{
-Locctr+=(3*(atoi(operand)));
-}
-else if(strcmp(opcode,"WORD")==0){
-Locctr+=3;
-}
-else if(strcmp(opcode,"BYTE")==0){
-Locctr++;
-}
-else if(strcmp(opcode,"RESB")==0){
-Locctr+=(atoi(operand));
-}
-}
-else{
-printf("error");
-flag=1;
-break;
-}
-fprintf(intermediate,"%d\t%s\t%s\t%s",Locctr,label,opcode,operand);
-printf("%d\t%s\t%s\t%s",Locctr,label,opcode,operand);
-fscanf(input,"%s\t%s\t%s",label,opcode,operand);
-}
-fprintf(intermediate,"%d\t%s\t%s\t%s",Locctr,label,opcode,operand);
-printf("length=%d\n",(Locctr-start));
-fclose(optab);
-fclose(symtab);
-fclose(intermediate);
-fclose(input);
-}
-
+ FILE *source,*optab,*intermediate,*symtab,*length;
+ source = fopen("source.txt","r");
+ optab = fopen("optab.txt","r");
+ intermediate = fopen("intermediate.txt","w");
+ symtab = fopen("symtab.txt","w+");
+ length=fopen("length.txt","w");
+ 
+ char label[20],opcode[20],operand[20],symtab_data[20],optab_data[20];
+ int locctr,starting_address,program_length;
+ bool symbol_found,opcode_found;
+ fscanf(source,"%s%s%s",label,opcode,operand);
+ if(strcmp(opcode,"START")==0){
+ 	starting_address = atoi(operand);
+ 	locctr = starting_address;
+ 	fprintf(intermediate,"\t\t%s\t\t%s\t%s\n",label,opcode,operand);
+      }
+ else{
+ 	locctr = 0;
+     }
+ fscanf(source,"%s%s%s",label,opcode,operand);
+ 
+ while(strcmp(opcode,"END")!=0){
+ 	if(strcmp(label,"**")!=0){
+ 		symbol_found = false;
+ 		rewind(symtab);
+ 		while(!feof(symtab)){
+ 			fscanf(symtab,"%s",symtab_data);
+ 			if(strcmp(symtab_data,label)==0){
+ 				printf("Error:Label found in SYMTAB");
+ 				symbol_found == true;
+ 			}
+ 			
+ 		}
+ 	        if(symbol_found == false){
+ 	        	fprintf(symtab,"%s\t%d\n",label,locctr);
+ 	        }
+ 	}
+ 	opcode_found = false;
+ 	rewind(optab);
+ 	while(!feof(optab)){
+ 	     fscanf(optab,"%s",optab_data);
+ 	     if(strcmp(optab_data,opcode)==0){
+ 	         opcode_found=true;
+ 	     }
+ 	}
+ 	fprintf(intermediate,"%d\t",locctr);
+ 	if(opcode_found == true){
+ 	    locctr+=3;
+ 	}
+ 	else if(strcmp(opcode,"WORD")==0){
+ 	    locctr+=3;
+ 	}
+ 	else if(strcmp(opcode,"RESW")==0){
+ 	     locctr+=3*atoi(operand);
+ 	}
+ 	else if(strcmp(opcode,"RESB")==0){
+ 	     locctr += atoi(operand);
+ 	}
+ 	else if(strcmp(opcode,"BYTE")==0){
+ 	     locctr += strlen(operand)-3;
+ 	}
+ 	else{
+ 	     printf("Error: Invalid operation code");
+ 	}
+ 	fprintf(intermediate,"%s\t%s\t%s\n",label,opcode,operand);
+ 	fscanf(source,"%s%s%s",label,opcode,operand);
+ 	//printf("\n%s\t%s\t%s\n",label,opcode,operand);
+    }
+    
+    fprintf(intermediate,"%d\t%s\t\t%s\t\t%s\n",locctr,label,opcode,operand);
+   // printf("%d\t%s\t\t%s\t\t%s\n",locctr,label,opcode,operand);
+    program_length = locctr - starting_address;
+    printf("\nProgram Length : %d\n\n",program_length);
+    fprintf(length,"%d",program_length);
+    fclose(source);
+      fclose(optab);
+    fclose(intermediate);
+        fclose(symtab);
+        fclose(length);
+ }
